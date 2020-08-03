@@ -1,5 +1,6 @@
 <html>
   <head>
+  	<meta charset="utf-8">
     <title>TMG Utility - Timer</title>
     <link rel="stylesheet" href="/style.css"/>
     <style type="text/css">
@@ -62,6 +63,13 @@
       </input>
       <input class="timer-input" type="number" id="_1_timer-input-seconds" value="0">
       </input>
+      <div id="timer-tip">
+      	<p>Składnia URL: /u/timer.html?</p>
+      	<p>mode=TRYB (0-domyślny, 1-stoper, 2-czasomierz)</p>
+      	<p>s=ilość SEKUND (dla tryby czasomierz)</p>
+      	<p>m=ilość MINUT (dla tryby czasomierz)</p>
+      	<p>h=ilość GODZIN (dla tryby czasomierz)</p>
+      </div>
       <script>
         const TM_NONE = 0, TM_TIMER = 1, TM_COUNTDOWN = 2;
         var _1_eHours = document.getElementById("_1_timer-hours");
