@@ -1,0 +1,209 @@
+<html>
+  <head>
+    <title>TMG Utility - Timer</title>
+    <link rel="stylesheet" href="/style.css"/>
+    <style type="text/css">
+    	#timer-timer {
+    	  border: 1px solid green;
+    	  color: white;
+    	  font-family: monospace;
+    	  font-size: 50px;
+    	  font-weight: bold;
+    	  padding: 30px 0px 30px 0px;
+    	  text-align: center;
+    	  text-shadow: 3px 3px 2px black;
+    	  width: 100%;
+    	}
+    	@keyframes timer-animated-separator {
+    	  0% {opacity: 100%;}
+    	  50% {opacity: 0%;}
+    	}
+    	.timer-animated-separator {
+    	  animation-name: timer-animated-separator;
+    	  animation-duration: 1s;
+    	  animation-iteration-count: infinite;
+    	  animation-timing-function: steps(1, start);
+    	}
+    	.timer-component {
+    	  background-color: transparent;
+    	  border: none;
+    	  color: white;
+    	  font-family: monospace;
+    	  font-size: 50px;
+    	  font-weight: bold;
+    	  text-align: center;
+    	  text-shadow: 3px 3px 2px black;
+    	  width: 100px;
+    	}
+    	.timer-input {
+    	  width: 50px;
+    	}
+    </style>
+  </head>
+  <body>
+    <div id="content">
+      <h1><a href="/">Too Much Gameplay</a></h1>
+      <h2>Timer</h2>
+      <div id="timer-timer">
+      	<span class="timer-component" id="_1_timer-hours">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-minutes">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-seconds">00</span><span class="timer-animated-separator">.</span><span class="timer-component" id="_1_timer-mseconds">000</span>
+      </div>
+      <button name="toggle" onclick="_1_toggleTimer()">
+        Toggle Timer
+      </button>
+      <button name="toggle" onclick="_1_runCountDown()">
+        Run Countdown
+      </button>
+      <button name="toggle" onclick="_1_pause()">
+        Pause
+      </button>
+      <input class="timer-input" type="number" id="_1_timer-input-hours" value="0">
+      </input>
+      <input class="timer-input" type="number" id="_1_timer-input-minutes" value="0">
+      </input>
+      <input class="timer-input" type="number" id="_1_timer-input-seconds" value="0">
+      </input>
+      <script>
+        const TM_NONE = 0, TM_TIMER = 1, TM_COUNTDOWN = 2;
+        var _1_eHours = document.getElementById("_1_timer-hours");
+        var _1_eMinutes = document.getElementById("_1_timer-minutes");
+        var _1_eSeconds = document.getElementById("_1_timer-seconds");
+        var _1_eMSeconds = document.getElementById("_1_timer-mseconds");
+        var _1_eTimeInputHours = document.getElementById("_1_timer-input-hours");
+        var _1_eTimeInputMinutes = document.getElementById("_1_timer-input-minutes");
+        var _1_eTimeInputSeconds = document.getElementById("_1_timer-input-seconds");
+        var _1_timer = document.getElementById("timer-timer");
+        var _1_startTime = (new Date()).getTime();
+        var _1_finishTime = (new Date()).getTime(); //for countdown
+        var _1_timerRunning = false;
+        var _1_timerMode = TM_NONE;
+        var _1_interval = null;
+        var _1_currentTime = (new Date()).getTime();
+        var _1_pauseTime = (new Date()).getTime();
+        var _1_paused = false;
+        _1_timer.style.color = "white";
+        
+        function _1_updateTimerDisplay()
+        {
+          var diff = ((_1_timerMode == TM_COUNTDOWN) ? (_1_finishTime - _1_currentTime) : ((_1_timerMode == TM_TIMER) ? (_1_currentTime - _1_startTime) : 0));
+          _1_eMSeconds.innerHTML = (diff % 1000).toString().padStart(3, "0");
+          diff /= 1000;
+          diff = Math.floor(diff);
+          _1_eSeconds.innerHTML = (diff % 60).toString().padStart(2, "0");
+          diff /= 60;
+          diff = Math.floor(diff);
+          _1_eMinutes.innerHTML = (diff % 60).toString().padStart(2, "0");
+          diff /= 60;
+          diff = Math.floor(diff);
+          _1_eHours.innerHTML = diff.toString().padStart(2, "0");
+        }
+        function _1_doUpdate()
+        {
+          if(_1_timerRunning && !_1_paused)
+          {
+            _1_currentTime = (new Date()).getTime();
+            if(_1_timerMode == TM_COUNTDOWN && _1_currentTime >= _1_finishTime)
+            {
+              _1_stopTimer();
+              _1_currentTime = _1_finishTime;
+            }
+            _1_updateTimerDisplay();
+          }
+        }
+        function _1_startTimer()
+        {
+          _1_currentTime = (new Date()).getTime();
+          _1_startTime = _1_currentTime;
+          _1_timer.style.color = "red";
+          _1_timerMode = TM_TIMER;
+          _1_timerRunning = true;
+          _1_paused = false;
+          _1_interval = setInterval(_1_doUpdate, 25);
+        }
+        function _1_stopTimer()
+        {
+          _1_timer.style.color = "white";
+          _1_timerRunning = false;
+          _1_paused = false;
+          clearInterval(_1_interval);
+          _1_updateTimerDisplay();
+        }
+        function _1_toggleTimer()
+        {
+          _1_timerRunning ? _1_stopTimer() : _1_startTimer();
+        }
+        function _1_runCountDown()
+        {
+          _1_currentTime = (new Date()).getTime();
+          _1_startTime = _1_currentTime;
+          _1_finishTime = _1_startTime + (_1_eTimeInputHours.value * 3600000 + _1_eTimeInputMinutes.value * 60000 + _1_eTimeInputSeconds.value * 1000);
+          _1_timer.style.color = "yellow";
+          _1_timerMode = TM_COUNTDOWN;
+          _1_timerRunning = true;
+          _1_paused = false;
+          _1_interval = setInterval(_1_doUpdate, 25);
+        }
+        function _1_pause()
+        {
+          if(_1_timerRunning)
+          {
+            if(_1_paused)
+            {
+              if(_1_timerMode == TM_COUNTDOWN)
+              {
+                _1_finishTime += Number((new Date()).getTime() - Number(_1_pauseTime));
+              }
+              else
+              {
+                _1_startTime += Number((new Date()).getTime() - Number(_1_pauseTime));
+              }
+              _1_paused = false;
+            }
+            else
+            {
+              _1_pauseTime = (new Date()).getTime();
+              _1_paused = true;
+            }
+          }
+        }
+        function getParam(name)
+        {
+          var url = new URL(window.location);
+          var v = url.searchParams.get(name);
+          return (v === undefined || v === null) ? "" : v;
+        }
+        function _1_isURLQuery()
+        {
+          return getParam("mode") != "";
+        }
+        function _1_loadFromURL()
+        {
+          console.log("URL query present");
+          
+          _1_eTimeInputHours.value = getParam("h");
+          _1_eTimeInputMinutes.value = getParam("m");
+          _1_eTimeInputSeconds.value = getParam("s");
+          _1_timerMode = Number(getParam("mode"));
+          console.log("Timer mode: " + _1_timerMode);
+          switch(_1_timerMode)
+          {
+            case TM_TIMER:
+              console.log("Starting timer");
+              _1_startTimer();
+              break;
+            case TM_COUNTDOWN:
+              console.log("Starting countdown");
+              _1_runCountDown();
+              break;
+            default:
+              break;
+          }
+        }
+        if(_1_isURLQuery())
+          _1_loadFromURL();
+      </script>
+      <script>
+        
+      </script>
+    </div>
+  </body>
+</html>
