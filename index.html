@@ -11,9 +11,54 @@
       <p>To jest strona z linkami do programów narzędziowych używanych przez kanał <b>TMG</b> (<i>Too Much Gameplay</i>).</p>
       <p><a href="https://youtube.com/channel/UCLy_A1Vd5XUeIl_BJ8s4D4w">Zobacz kanał</a></p>
       <h2>Lista programów narzędziowych</h2>
-        <ul class="app-list">
-          <li class="app-list-element"><div class="list-name-f"><span class="list-name">&#9202; Timer</span></div><a class="list-link" href="/u/timer.html">&#10132; Przejdź</a></li>
+        <ul class="app-list" id="utility-app-list">
         </ul>
     </div>
+    <script>
+    /*
+      -- Entry format --
+      ```
+        {
+          "icon": "<Component icon (HTML special character notation, without starting '&')>",
+          "displayName": "<Display name of component>",
+          "path": "<Link path (e.g. timer.html)>",
+          "settings": [
+            {
+              "keyName": "<Form name (in URL)>",
+              "displayName": "<Option name displayed in form>",
+              "type": "<Input type (same as in HTML forms)"
+            },...
+          ]
+        }
+      ```
+    */
+    function generateUtilityEntry(entry) {
+      var icon = entry.icon;
+      var displayName = entry.displayName;
+      var path = entry.path;
+      var settings = entry.settings;
+      
+      var list_name = "&" + icon + "; " + displayName;
+      var list_link = "/u/" + path;
+      
+      var html = "";
+      html += '<li class="app-list-element"><div class="list-name-f"><span class="list-name">';
+      html += list_name;
+      html += '</span></div><a class="list-link" href="';
+      html += list_link;
+      html += '">&#10132; Przejdź</a></li>';
+      
+      return html;
+    }
+    
+    const utilityEntries = [
+      {"icon": "#9200", "displayName": "Timer", "path": "timer.html"},
+    ]; 
+    
+    var el_app_list = document.getElementById("utility-app-list");
+    utilityEntries.forEach(function(entry) {
+      el_app_list.innerHTML += generateUtilityEntry(entry);
+    });
+    </script>
   </body>
 </html>
