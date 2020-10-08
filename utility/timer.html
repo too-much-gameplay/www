@@ -2,7 +2,7 @@
   <head>
   	<meta charset="utf-8">
     <title>TMG Utility - Timer</title>
-    <link rel="stylesheet" href="/style.css"/>
+    <link rel="stylesheet" href="../style.css"/>
     <style type="text/css">
     	#timer-timer {
     	  border: 1px solid green;
@@ -71,13 +71,58 @@
     	.timer-input {
     	  width: 50px;
     	}
+			#msgbox {
+				position: fixed;
+				width: 100%;
+				height: 100%;
+				top: 0;
+				left: 0;
+				background-color: rgba(0, 0, 0, 0.6);
+			}
+			#msgbox-container {
+				background-color: #dddddd;
+				border: 1px solid #aa4444;
+				border-radius: 4px;
+				color: #aa4444;
+				font-family: sans-serif;
+				font-size: 20px;
+				font-weight: bold;
+				margin: 100px 20px 0px 20px;
+				padding: 10px;
+				text-align: center;
+			}
+			button.msgbox {
+				background-color: #bbbbbb;
+				border: 1px solid #777777;
+				border-radius: 6px;
+				box-shadow: 2px 2px #444444;
+				color: black;
+				padding: 5px;
+				margin-top: 20px;
+				min-width: 100px;
+			}
+			#urlform {
+				border: 1px solid black;
+				border-radius: 5px;
+				margin: 40px;
+				padding: 20px;
+			}
+			label {
+				min-width: 150px;
+				display: inline-block;
+				padding: 4px;
+			}
+			select, input, button {
+				min-width: 80px;
+				
+			}
     </style>
   </head>
   <body>
     <div id="content">
       <h1><a href="/">Too Much Gameplay</a></h1>
       <h2>Timer</h2>
-      <h3 id="_1_timer-mode">UNKNOWN MODE</h3>
+      <h3 id="_1_timer-mode">Normal Mode (No Sync)</h3>
       <div id="timer-timer">
       	<span class="timer-component" id="_1_timer-hours">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-minutes">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-seconds">00</span><span class="timer-animated-separator">.</span><span class="timer-component" id="_1_timer-mseconds">000</span>
         <div id="timer-progress"></div><div id="timer-progress-background"></div>
@@ -100,6 +145,26 @@
       </input>
       <input class="timer-input" type="number" id="_1_timer-input-precount" value="0">
       </input>
+			<form action="timer.html" id="urlform">
+				<h3>Otwórz z URL</h3>
+				<label for="h">Godziny</label><input name="m" type="number" value="0"></input><br>
+				<label for="m">Minuty</label><input name="m" type="number" value="0"></input><br>
+				<label for="s">Sekundy</label><input name="s" type="number" value="0"></input><br>
+				<label for="p">Odliczanie (s)</label><input name="p" type="number" value="0"></input><br>
+				<label for="admin">Admin Mode</label>
+				<select name="admin" value="2">
+					<option value="0">Slave</option>
+					<option value="1">Master</option>
+					<option value="2">No Sync</option>
+				</select><br>
+				<label for="mode">Timer Mode</label>
+				<select name="mode" value="0">
+					<option value="0">None</option>
+					<option value="1">Timer</option>
+					<option value="2">Countdown</option>
+				</select><br>
+				<button type="submit">Otwórz</button>
+			</form>
       <div id="timer-tip">
       	<p>Składnia URL: /u/timer.html?</p>
       	<p>mode=TRYB (0-domyślny, 1-stoper, 2-czasomierz)</p>
@@ -116,6 +181,16 @@
       	</ul>
       	<p id="debug">debug</p>
       </div>
+	  <div id="msgbox">
+			<div id="msgbox-container">
+				<div id="msgbox-message">
+				JavaScript is disabled. It must be enabled for this page to&nbsp;work.
+				</div>
+				<div id="msgbox-buttons">
+					<button class="msgbox" onclick="document.getElementById('msgbox').style.display='none'">Ok</button>
+				</div>
+			</div>
+	  </div>
       <script>
         const TM_NONE = 0, TM_TIMER = 1, TM_COUNTDOWN = 2;
         const ADM_SLAVE = 0, ADM_MASTER = 1, ADM_NONE = 2;
@@ -136,6 +211,7 @@
         var _1_timerRunning = false;
         var _1_timerMode = TM_NONE;
         var _1_interval = null;
+        var _1_syncInterval = null;
         var _1_currentTime = (new Date()).getTime();
         var _1_pauseTime = (new Date()).getTime();
         var _1_diff = 0;
@@ -146,7 +222,20 @@
         var edbg = document.getElementById("debug");
         var _1_etimer_mode = document.getElementById("_1_timer-mode");
         var _1_etimerFinishSound = document.getElementById("timer-finish-sound");
-        _1_timer.style.color = "white";
+        var _1_eMsgBox = document.getElementById("msgbox");
+				_1_eMsgBox.style.display = "none";
+        var _1_eMsgBoxMessage = document.getElementById("msgbox-message");
+				_1_timer.style.color = "white";
+		
+			function _1_networkFailed(message)
+			{
+				_1_eMsgBoxMessage.innerHTML = "Connection to server failed: <i>" + message + "</i>";
+				_1_eMsgBox.style.display = "block";
+				_1_adminMode = ADM_NONE;
+				_1_etimer_mode.innerHTML = "<span style='color: red'>No Sync <b>(Server connection failed)</b></span>";
+				if(_1_syncInterval)
+					clearInterval(_1_syncInterval);
+			}
         
         function _1_requestJSON(path, callback)
         {
@@ -158,10 +247,13 @@
             {
               if(xhr.status == 200)
                 console.log("request succeeded: " + callback(xhr.responseText));
-              else
-                console.log("request failed: " + xhr.status);
             }
           };
+					xhr.onerror = function()
+					{
+						console.log("request failed: " + xhr.status);
+						_1_networkFailed("request: " + xhr.status);
+					};
           xhr.open("POST", path);
           xhr.send(); //slave
         }
@@ -176,10 +268,13 @@
             {
               if(xhr.status == 200)
                 console.log("request succeeded");
-              else
-                console.log("request failed: " + xhr.status);
             }
           };
+					xhr.onerror = function()
+					{
+						console.log("save failed: " + xhr.status);
+						_1_networkFailed("save: " + xhr.status);
+					};
           xhr.open("PUT", path);
           xhr.send(data); //master
         }
@@ -423,9 +518,9 @@
           
           switch(Number(_1_adminMode))
           {
-            case ADM_MASTER: _1_etimer_mode.innerHTML = "Master Mode (Write)"; break;
+            case ADM_MASTER: _1_etimer_mode.innerHTML = "<span style='color: red'>Master Mode (Write)</span>"; break;
             case ADM_SLAVE: _1_etimer_mode.innerHTML = "Slave Mode (Read)"; break;
-            case ADM_NONE: _1_etimer_mode.innerHTML = "Normal Mode (No Sync)"; break;
+						case ADM_NONE: break;
             default: _1_etimer_mode.innerHTML = "Unknown Mode (" + Number(_1_adminMode) + " : " + typeof Number(_1_adminMode) + ")"; break;
           }
           
@@ -456,7 +551,7 @@
         if(_1_adminMode == ADM_SLAVE)
         {  
           console.log("Admin Mode is Slave, setting up loading from server");
-          setInterval(_1_loadDataFromServer, 500);
+          _1_syncInterval = setInterval(_1_loadDataFromServer, 500);
         }
         else if(_1_adminMode == ADM_MASTER)
         {
