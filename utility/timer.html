@@ -4,46 +4,48 @@
     <title>TMG Utility - Timer</title>
     <link rel="stylesheet" href="../style.css"/>
     <style type="text/css">
+    	@font-face {
+        font-family: CursedTimerUlil-Aznm;
+        src: url(/res/CursedTimerUlil-Aznm.ttf);
+    	}
     	#timer-timer {
     	  border: 1px solid green;
     	  color: white;
-    	  font-family: sans-serif;
+    	  font-family: "CursedTimerUlil-Aznm";
     	  font-size: 35px;
     	  font-weight: bold;
     	  padding: 30px 10px 30px 10px;
     	  text-align: center;
-    	  text-shadow: 3px 3px 2px black;
+    	  text-shadow: 1px 1px rgba(0, 0, 0, 0.7);
     	  width: 395px;
+    	  letter-spacing: 3px;
     	}
     	#timer-progress {
     	  display: block;
     	  height: 50px;
-    	  background-color: #11cc88;
+    	  background-color: RGBA(17, 224, 136, 0.5);
     	  position: relative;
-    	  top: -51px;
+    	  top: -50px;
     	  z-index: -1;
-    	  border: 2px solid #808080;
     	  width: 0%;
     	  border-radius: 4px;
     	}
     	#timer-progress-background {
     	  display: block;
     	  height: 50px;
-    	  background-color: #cc4411;
+    	  background-color: RGBA(224, 68, 17, 0.5);
     	  position: relative;
-    	  top: -105px;
+    	  top: -100px;
     	  z-index: -2;
-    	  border: 2px solid #808080;
     	  width: 100%;
     	  border-radius: 4px;
     	}
     	@keyframes timer-animated-separator {
     	  0% {opacity: 100%;}
     	  50% {opacity: 0%;}
+    	  100% {opacity: 100%;}
     	}
     	@keyframes timer-blink {
-    	  0% {background-color: #cc4411;}
-    	  50% {background-color: #222222;}
     	}
     	.timer-animated-separator {
     	  animation-name: timer-animated-separator;
@@ -55,17 +57,17 @@
     	  animation-name: timer-blink;
     	  animation-duration: 1s;
     	  animation-iteration-count: infinite;
-    	  animation-timing-function: ease-in-out;
+    	  animation-timing-function: cubic-bezier(0.87, 0, 0.13, 1);
     	}
     	.timer-component {
     	  background-color: transparent;
     	  border: none;
     	  color: white;
-    	  font-family: sans-serif;
+    	  font-family: "CursedTimerUlil-Aznm";
     	  font-size: 40px;
     	  font-weight: bold;
     	  text-align: center;
-    	  text-shadow: 3px 3px 2px black;
+    	  text-shadow: 1px 1px rgba(0, 0, 0, 0.7);
     	  width: 100px;
     	}
     	.timer-input {
