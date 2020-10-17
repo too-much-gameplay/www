@@ -127,7 +127,7 @@
       <h2>Timer</h2>
       <h3 id="_1_timer-mode">Normal Mode (No Sync)</h3>
       <div id="timer-timer">
-      	<span class="timer-component" id="_1_timer-hours">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-minutes">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-seconds">00</span><span class="timer-animated-separator">.</span><span class="timer-component" id="_1_timer-mseconds">000</span>
+      	<span class="timer-component" id="_1_timer-hours">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-minutes">00</span><span class="timer-animated-separator">:</span><span class="timer-component" id="_1_timer-seconds">00</span><span class="timer-animated-separator" id="_1_timer-separator-seconds">.</span><span class="timer-component" id="_1_timer-mseconds">000</span>
         <div id="timer-progress"></div><div id="timer-progress-background"></div>
       <audio src="finish.wav" id="timer-finish-sound"></audio>
       </div>
@@ -195,7 +195,7 @@
 			</div>
 	  </div>
       <script>
-        const TM_NONE = 0, TM_TIMER = 1, TM_COUNTDOWN = 2;
+        const TM_NONE = 0, TM_TIMER = 1, TM_COUNTDOWN = 2, TM_REALTIME = 3;
         const ADM_SLAVE = 0, ADM_MASTER = 1, ADM_NONE = 2;
         var _1_eHours = document.getElementById("_1_timer-hours");
         var _1_eMinutes = document.getElementById("_1_timer-minutes");
@@ -208,6 +208,7 @@
         var _1_timer = document.getElementById("timer-timer");
         var _1_eprogress = document.getElementById("timer-progress");
         var _1_eprogress_background = document.getElementById("timer-progress-background");
+        var _1_eSecondsSeparator = document.getElementById("_1_timer-separator-seconds");
         var _1_startTime = (new Date()).getTime();
         var _1_realStartTime = (new Date()).getTime();
         var _1_finishTime = (new Date()).getTime(); //for countdown
@@ -322,9 +323,9 @@
               var tmpMode = _1_timerMode;
               _1_timerMode = data.timerMode;
               
-              if(tmpMode != TM_TIMER && data.timerMode == TM_TIMER || tmpMode != TM_COUNTDOWN && data.timerMode == TM_COUNTDOWN)
-                _1_interval = setInterval(_1_doUpdate, 25);
-              if(tmpMode == TM_TIMER && data.timerMode != TM_TIMER || tmpMode == TM_COUNTDOWN && data.timerMode != TM_COUNTDOWN)
+              if(tmpMode != TM_TIMER && data.timerMode == TM_TIMER || tmpMode != TM_COUNTDOWN && data.timerMode == TM_COUNTDOWN || tmpMode != TM_REALTIME && data.timerMode == TM_REALTIME)
+                startTimerUpdate();
+              if(tmpMode == TM_TIMER && data.timerMode != TM_TIMER || tmpMode == TM_COUNTDOWN && data.timerMode != TM_COUNTDOWN || tmpMode == TM_REALTIME && data.timerMode != TM_REALTIME)
               {
                 clearInterval(_1_interval);
                 _1_etimerFinishSound.play();
@@ -338,12 +339,9 @@
           });
         }
         
-        function _1_updateTimerDisplay()
+        function precountModeDisplay()
         {
-          if(_1_startTime > _1_currentTime)
-          {
-            //precount mode!
-            if(_1_eHours.style.display != "none")
+            if(_1_eMSeconds.style.display != "none")
             {
               _1_eHours.style.display = "none";
               _1_eMinutes.style.display = "none";
@@ -352,16 +350,11 @@
               for(var as = 0; as < animatedSeparators.length; as++)
                 animatedSeparators[as].style.display = "none";
             }
-            
-            var diff = ((_1_timerMode == TM_NONE) ? 0 : (_1_startTime - _1_currentTime));
-            _1_diff = diff;
-            diff /= 1000;
-            diff = Math.floor(diff);
-            _1_eSeconds.innerHTML = "— " + (diff % 60 + 1).toString() + " —";
-          }
-          else
-          {
-            if(_1_eHours.style.display != "inline")
+        }
+        
+        function timerModeDisplay()
+        {
+            if(_1_eMSeconds.style.display != "inline")
             {
               _1_eHours.style.display = "inline";
               _1_eMinutes.style.display = "inline";
@@ -370,46 +363,82 @@
               for(var as = 0; as < animatedSeparators.length; as++)
                 animatedSeparators[as].style.display = "inline";
             }
-            
-            var diff = ((_1_timerMode == TM_COUNTDOWN) ? (_1_finishTime - _1_currentTime) : ((_1_timerMode == TM_TIMER) ? (_1_currentTime - _1_startTime) : 0));
-            _1_diff = diff;
-            _1_eMSeconds.innerHTML = (diff % 1000).toString().padStart(3, "0");
-            diff /= 1000;
-            diff = Math.floor(diff);
-            _1_eSeconds.innerHTML = (diff % 60).toString().padStart(2, "0");
-            diff /= 60;
-            diff = Math.floor(diff);
-            _1_eMinutes.innerHTML = (diff % 60).toString().padStart(2, "0");
-            diff /= 60;
-            diff = Math.floor(diff);
-            _1_eHours.innerHTML = diff.toString().padStart(2, "0");
-          }
-          
-          if(_1_eMinutes.innerHTML < 1)
+        }
+        
+        function _1_updateTimerDisplay()
+        {
+          // Realtime clock.
+          if(_1_timerMode == TM_REALTIME)
           {
-            _1_eprogress_background.classList.add("timer-blink");
-            //_1_eprogress.classList.add("timer-blink");
-          }
-          else
-          {
-            _1_eprogress_background.classList.remove("timer-blink");
-            //_1_eprogress.classList.remove("timer-blink");
-          }
-          if(_1_timerMode == TM_COUNTDOWN)
-          {
-            _1_eprogress.style.display = "block";
-            _1_eprogress_background.style.display = "block";
-            _1_eprogress.style.width = ((_1_diff) / (_1_timeInput) * 100) + "%";
-          }
-          else
-          {
+            // Simply display _1_currentTime.
+            timerModeDisplay();
+            _1_eMSeconds.style.display = "none";
+            var date = new Date(_1_currentTime);
+            _1_eMSeconds.innerHTML = "000";
+            _1_eSeconds.innerHTML = (date.getSeconds()).toString().padStart(2, "0");
+            _1_eMinutes.innerHTML = (date.getMinutes()).toString().padStart(2, "0");
+            _1_eHours.innerHTML = (date.getHours()).toString().padStart(2, "0");
             _1_eprogress.style.display = "none";
             _1_eprogress_background.style.display = "none";
+            _1_eSecondsSeparator.style.display = "none";
+          }
+          else
+            {
+            // Other timer modes.
+            if(_1_startTime > _1_currentTime)
+            {
+              //precount mode!
+              precountModeDisplay();
+              var diff = ((_1_timerMode == TM_NONE) ? 0 : (_1_startTime - _1_currentTime));
+              _1_diff = diff;
+              diff /= 1000;
+              diff = Math.floor(diff);
+              _1_eSeconds.innerHTML = "— " + (diff % 60 + 1).toString() + " —";
+            }
+            else
+            {
+              timerModeDisplay();
+              
+              var diff = ((_1_timerMode == TM_COUNTDOWN) ? (_1_finishTime - _1_currentTime) : ((_1_timerMode == TM_TIMER) ? (_1_currentTime - _1_startTime) : 0));
+              _1_diff = diff;
+              _1_eMSeconds.innerHTML = (diff % 1000).toString().padStart(3, "0");
+              diff /= 1000;
+              diff = Math.floor(diff);
+              _1_eSeconds.innerHTML = (diff % 60).toString().padStart(2, "0");
+              diff /= 60;
+              diff = Math.floor(diff);
+              _1_eMinutes.innerHTML = (diff % 60).toString().padStart(2, "0");
+              diff /= 60;
+              diff = Math.floor(diff);
+              _1_eHours.innerHTML = diff.toString().padStart(2, "0");
+            }
+            
+            if(_1_eMinutes.innerHTML < 1)
+            {
+              _1_eprogress_background.classList.add("timer-blink");
+              //_1_eprogress.classList.add("timer-blink");
+            }
+            else
+            {
+              _1_eprogress_background.classList.remove("timer-blink");
+              //_1_eprogress.classList.remove("timer-blink");
+            }
+            if(_1_timerMode == TM_COUNTDOWN)
+            {
+              _1_eprogress.style.display = "block";
+              _1_eprogress_background.style.display = "block";
+              _1_eprogress.style.width = ((_1_diff) / (_1_timeInput) * 100) + "%";
+            }
+            else
+            {
+              _1_eprogress.style.display = "none";
+              _1_eprogress_background.style.display = "none";
+            }
           }
         }
         function _1_doUpdate()
         {
-          if(_1_timerRunning && !_1_paused)
+          if((_1_timerRunning && !_1_paused) || _1_timerMode == TM_REALTIME)
           {
             _1_currentTime = (new Date()).getTime();
             if(_1_timerMode == TM_COUNTDOWN && _1_currentTime >= _1_finishTime)
@@ -421,6 +450,12 @@
             _1_updateTimerDisplay();
           }
         }
+        
+        function startTimerUpdate()
+        {
+          _1_interval = setInterval(_1_doUpdate, 25);
+        }
+        
         function _1_startTimer()
         {
           if(_1_adminMode != ADM_SLAVE)
@@ -432,7 +467,7 @@
             _1_timerMode = TM_TIMER;
             _1_timerRunning = true;
             _1_paused = false;
-            _1_interval = setInterval(_1_doUpdate, 25);
+            startTimerUpdate();
             _1_saveDataToServer();
           }
         }
@@ -468,7 +503,7 @@
             _1_timerMode = TM_COUNTDOWN;
             _1_timerRunning = true;
             _1_paused = false;
-            _1_interval = setInterval(_1_doUpdate, 25);
+            startTimerUpdate();
             _1_saveDataToServer();
           }
         }
@@ -515,16 +550,20 @@
           _1_eTimeInputSeconds.value = getParam("s");
           _1_eTimeInputPrecount.value = getParam("p");
           _1_timerMode = Number(getParam("mode"));
+          
           _1_adminMode = getParam("admin");
+          if(_1_adminMode == "")
+            _1_adminMode = 2;
+            
           console.log("Timer mode: " + _1_timerMode);
           console.log("Admin mode: " + _1_adminMode);
           
-          switch(Number(_1_adminMode))
+          switch(_1_adminMode)
           {
             case ADM_MASTER: _1_etimer_mode.innerHTML = "<span style='color: red'>Master Mode (Write)</span>"; break;
             case ADM_SLAVE: _1_etimer_mode.innerHTML = "Slave Mode (Read)"; break;
 						case ADM_NONE: break;
-            default: _1_etimer_mode.innerHTML = "Unknown Mode (" + Number(_1_adminMode) + " : " + typeof Number(_1_adminMode) + ")"; break;
+            default: _1_etimer_mode.innerHTML = "Unknown Mode (" + _1_adminMode + " : " + typeof _1_adminMode + ")"; break;
           }
           
           if(_1_adminMode != ADM_SLAVE)
@@ -539,11 +578,20 @@
                 console.log("Starting countdown");
                 _1_runCountDown();
                 break;
+              case TM_REALTIME:
+                console.log("Starting realtime clock");
+                startTimerUpdate();
+                break;
               default:
                 break;
             }
           }
         }
+        
+        ////////////////
+        // LOAD TIMER //
+        ////////////////
+        
         console.log("Starting TMG Timer Utility");
         if(_1_isURLQuery())
         {
