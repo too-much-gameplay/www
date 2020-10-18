@@ -217,12 +217,14 @@
         var _1_interval = null;
         var _1_syncInterval = null;
         var _1_currentTime = (new Date()).getTime();
+        var _1_serverTime = 0;
         var _1_pauseTime = (new Date()).getTime();
         var _1_diff = 0;
         var _1_timeInput = 0;
         var _1_paused = false;
         var _1_adminMode = ADM_NONE;
         var _1_lastServerUpdate = 0;
+        var _1_lastServerUpdateByLocalTime = 0;
         var edbg = document.getElementById("debug");
         var _1_etimer_mode = document.getElementById("_1_timer-mode");
         var _1_etimerFinishSound = document.getElementById("timer-finish-sound");
@@ -231,15 +233,15 @@
         var _1_eMsgBoxMessage = document.getElementById("msgbox-message");
 				_1_timer.style.color = "white";
 		
-			function _1_networkFailed(message)
-			{
-				_1_eMsgBoxMessage.innerHTML = "Connection to server failed: <i>" + message + "</i>";
-				_1_eMsgBox.style.display = "block";
-				_1_adminMode = ADM_NONE;
-				_1_etimer_mode.innerHTML = "<span style='color: red'>No Sync <b>(Server connection failed)</b></span>";
-				if(_1_syncInterval)
-					clearInterval(_1_syncInterval);
-			}
+			  function _1_networkFailed(message)
+			  {
+				  _1_eMsgBoxMessage.innerHTML = "Connection to server failed: <i>" + message + "</i>";
+				  _1_eMsgBox.style.display = "block";
+				  _1_adminMode = ADM_NONE;
+				  _1_etimer_mode.innerHTML = "<span style='color: red'>No Sync <b>(Server connection failed)</b></span>";
+				  if(_1_syncInterval)
+					  clearInterval(_1_syncInterval);
+			  }
         
         function _1_requestJSON(path, callback)
         {
@@ -305,37 +307,38 @@
         function _1_loadDataFromServer()
         {
           _1_requestJSON("/api/timer-get-data.php", 
-          function(res)
-          {
-            var resD = JSON.parse(res);
-            console.log("Data received: " + res);
-            var data = resD.data;
-            if(_1_lastServerUpdate < data.timeStamp)
+            function(res)
             {
-              _1_startTime= data.startTime;
-              _1_realStartTime = data.realStartTime;
-              _1_finishTime = data.finishTime;
-              _1_timerRunning = data.timerRunning;
-              _1_timeInput = data.timeInput;
-              _1_currentTime = data.currentTime;
-              _1_pauseTime = data.pauseTime;
-              _1_paused = data.paused;
-              var tmpMode = _1_timerMode;
-              _1_timerMode = data.timerMode;
-              
-              if(tmpMode != TM_TIMER && data.timerMode == TM_TIMER || tmpMode != TM_COUNTDOWN && data.timerMode == TM_COUNTDOWN || tmpMode != TM_REALTIME && data.timerMode == TM_REALTIME)
-                startTimerUpdate();
-              if(tmpMode == TM_TIMER && data.timerMode != TM_TIMER || tmpMode == TM_COUNTDOWN && data.timerMode != TM_COUNTDOWN || tmpMode == TM_REALTIME && data.timerMode != TM_REALTIME)
+              var resD = JSON.parse(res);
+              console.log("Data received: " + res);
+              var data = resD.data;
+              if(_1_lastServerUpdate < data.timeStamp)
               {
-                clearInterval(_1_interval);
-                _1_etimerFinishSound.play();
+                _1_startTime= data.startTime;
+                _1_realStartTime = data.realStartTime;
+                _1_finishTime = data.finishTime;
+                _1_timerRunning = data.timerRunning;
+                _1_timeInput = data.timeInput;
+                _1_serverTime = data.currentTime;
+                _1_pauseTime = data.pauseTime;
+                _1_paused = data.paused;
+                var tmpMode = _1_timerMode;
+                _1_timerMode = data.timerMode;
+                
+                if(tmpMode != TM_TIMER && data.timerMode == TM_TIMER || tmpMode != TM_COUNTDOWN && data.timerMode == TM_COUNTDOWN || tmpMode != TM_REALTIME && data.timerMode == TM_REALTIME)
+                  startTimerUpdate();
+                if(tmpMode == TM_TIMER && data.timerMode != TM_TIMER || tmpMode == TM_COUNTDOWN && data.timerMode != TM_COUNTDOWN || tmpMode == TM_REALTIME && data.timerMode != TM_REALTIME)
+                {
+                  clearInterval(_1_interval);
+                  //_1_etimerFinishSound.play();
+                }
+                
+                _1_lastServerUpdate = data.timeStamp;
+                _1_lastServerUpdateByLocalTime = (new Date()).getTime();
+                
+                edbg.innerText = JSON.stringify(data);
               }
-              
-              _1_lastServerUpdate = data.timeStamp;
-              
-              edbg.innerText = JSON.stringify(data);
-            }
-            return "success";
+              return "success";
           });
         }
         
@@ -440,7 +443,11 @@
         {
           if((_1_timerRunning && !_1_paused) || _1_timerMode == TM_REALTIME)
           {
-            _1_currentTime = (new Date()).getTime();
+            if(_1_adminMode != ADM_SLAVE)
+              _1_currentTime = (new Date()).getTime();
+            else
+              _1_currentTime = ((new Date()).getTime() - _1_lastServerUpdateByLocalTime) + _1_serverTime;
+              
             if(_1_timerMode == TM_COUNTDOWN && _1_currentTime >= _1_finishTime)
             {
               _1_etimerFinishSound.play();
